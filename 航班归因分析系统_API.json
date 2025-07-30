@@ -1,0 +1,592 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "航班归因分析系统API",
+    "description": "分析航班保障任务CV波动性的归因分析系统",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "本地开发服务器"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "根路径",
+        "description": "获取API基本信息",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "航班归因分析系统API"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "健康检查",
+        "description": "检查系统运行状态",
+        "responses": {
+          "200": {
+            "description": "系统正常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "healthy"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "系统运行正常"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/api/v1/attribution/task": {
+      "post": {
+        "summary": "任务ID归因分析",
+        "description": "根据任务ID进行归因分析，识别影响CV值的关键因素",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["task_id"],
+                "properties": {
+                  "task_id": {
+                    "type": "integer",
+                    "description": "任务ID",
+                    "example": 123
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "归因分析成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "shap_values": {
+                      "type": "object",
+                      "description": "SHAP值字典",
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "example": {
+                        "visibility": 0.15,
+                        "wind_speed": 0.12,
+                        "temperature": 0.08
+                      }
+                    },
+                    "feature_importance": {
+                      "type": "array",
+                      "description": "特征重要性列表",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "feature": {
+                            "type": "string"
+                          },
+                          "importance": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "example": [
+                        {"feature": "visibility", "importance": 0.15},
+                        {"feature": "wind_speed", "importance": 0.12}
+                      ]
+                    },
+                    "top_features": {
+                      "type": "array",
+                      "description": "前10个重要特征",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "feature": {
+                            "type": "string"
+                          },
+                          "importance": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "data_summary": {
+                      "type": "object",
+                      "description": "数据摘要",
+                      "properties": {
+                        "task_id": {
+                          "type": "integer"
+                        },
+                        "total_samples": {
+                          "type": "integer"
+                        },
+                        "feature_count": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "响应消息",
+                      "example": "任务ID 123 归因分析完成"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "任务ID未找到",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "任务ID 123 没有找到数据"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "归因分析失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "归因分析失败: 模型未加载"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/attribution/time": {
+      "post": {
+        "summary": "时间段归因分析",
+        "description": "根据时间段进行归因分析，识别影响CV值的关键因素",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["start_time", "end_time"],
+                "properties": {
+                  "start_time": {
+                    "type": "string",
+                    "description": "开始时间（格式：YYYY-MM-DD HH:MM:SS）",
+                    "example": "2024-01-01 08:00:00"
+                  },
+                  "end_time": {
+                    "type": "string",
+                    "description": "结束时间（格式：YYYY-MM-DD HH:MM:SS）",
+                    "example": "2024-01-01 12:00:00"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "归因分析成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "shap_values": {
+                      "type": "object",
+                      "description": "SHAP值字典",
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "feature_importance": {
+                      "type": "array",
+                      "description": "特征重要性列表",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "feature": {
+                            "type": "string"
+                          },
+                          "importance": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "top_features": {
+                      "type": "array",
+                      "description": "前10个重要特征",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "feature": {
+                            "type": "string"
+                          },
+                          "importance": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "data_summary": {
+                      "type": "object",
+                      "description": "数据摘要",
+                      "properties": {
+                        "start_time": {
+                          "type": "string"
+                        },
+                        "end_time": {
+                          "type": "string"
+                        },
+                        "total_samples": {
+                          "type": "integer"
+                        },
+                        "feature_count": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "响应消息",
+                      "example": "时间段 2024-01-01 08:00:00 到 2024-01-01 12:00:00 归因分析完成"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "时间段未找到数据",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "时间段 2024-01-01 08:00:00 到 2024-01-01 12:00:00 没有找到数据"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "归因分析失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "归因分析失败: 模型未加载"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/train": {
+      "post": {
+        "summary": "模型训练（全部数据）",
+        "description": "使用全部数据进行模型训练",
+        "responses": {
+          "200": {
+            "description": "训练成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "响应消息",
+                      "example": "模型训练完成"
+                    },
+                    "best_model": {
+                      "type": "string",
+                      "description": "最佳模型类型",
+                      "example": "XGBoost"
+                    },
+                    "metrics": {
+                      "type": "object",
+                      "description": "模型性能指标",
+                      "properties": {
+                        "mse": {
+                          "type": "number",
+                          "description": "均方误差"
+                        },
+                        "rmse": {
+                          "type": "number",
+                          "description": "均方根误差"
+                        },
+                        "mae": {
+                          "type": "number",
+                          "description": "平均绝对误差"
+                        },
+                        "r2": {
+                          "type": "number",
+                          "description": "决定系数"
+                        }
+                      }
+                    },
+                    "training_samples": {
+                      "type": "integer",
+                      "description": "训练样本数",
+                      "example": 800
+                    },
+                    "test_samples": {
+                      "type": "integer",
+                      "description": "测试样本数",
+                      "example": 200
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "训练失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "模型训练失败: 数据加载失败"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/api/v1/model/info": {
+      "get": {
+        "summary": "获取模型信息",
+        "description": "获取当前模型的基本信息和性能指标",
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "model_type": {
+                      "type": "string",
+                      "description": "模型类型",
+                      "example": "XGBoost"
+                    },
+                    "training_date": {
+                      "type": "string",
+                      "description": "训练日期",
+                      "example": "2024-01-01 10:30:00"
+                    },
+                    "feature_count": {
+                      "type": "integer",
+                      "description": "特征数量",
+                      "example": 25
+                    },
+                    "model_performance": {
+                      "type": "object",
+                      "description": "模型性能指标",
+                      "properties": {
+                        "mse": {
+                          "type": "number",
+                          "description": "均方误差"
+                        },
+                        "rmse": {
+                          "type": "number",
+                          "description": "均方根误差"
+                        },
+                        "mae": {
+                          "type": "number",
+                          "description": "平均绝对误差"
+                        },
+                        "r2": {
+                          "type": "number",
+                          "description": "决定系数"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "获取失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "获取模型信息失败: 模型未加载"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PredictRequest": {
+        "type": "object",
+        "required": [
+          "airline_id",
+          "dep_airport_id",
+          "arr_airport_id",
+          "weather",
+          "visibility",
+          "wind_speed",
+          "wind_direction",
+          "temperature",
+          "is_holiday",
+          "workday_type",
+          "time_period",
+          "skill_level",
+          "task_type"
+        ],
+        "properties": {
+          "airline_id": {
+            "type": "integer",
+            "description": "航空公司ID"
+          },
+          "dep_airport_id": {
+            "type": "integer",
+            "description": "出发机场ID"
+          },
+          "arr_airport_id": {
+            "type": "integer",
+            "description": "到达机场ID"
+          },
+          "weather": {
+            "type": "string",
+            "description": "天气状况"
+          },
+          "visibility": {
+            "type": "number",
+            "description": "能见度"
+          },
+          "wind_speed": {
+            "type": "number",
+            "description": "风速"
+          },
+          "wind_direction": {
+            "type": "string",
+            "description": "风向"
+          },
+          "temperature": {
+            "type": "number",
+            "description": "温度"
+          },
+          "is_holiday": {
+            "type": "boolean",
+            "description": "是否节假日"
+          },
+          "workday_type": {
+            "type": "string",
+            "description": "工作日类型"
+          },
+          "time_period": {
+            "type": "string",
+            "description": "时间段"
+          },
+          "skill_level": {
+            "type": "string",
+            "description": "技能等级"
+          },
+          "task_type": {
+            "type": "string",
+            "description": "任务类型"
+          }
+        }
+      },
+      "TaskIdRequest": {
+        "type": "object",
+        "required": ["task_id"],
+        "properties": {
+          "task_id": {
+            "type": "integer",
+            "description": "任务ID"
+          }
+        }
+      },
+      "TimeRangeRequest": {
+        "type": "object",
+        "required": ["start_time", "end_time"],
+        "properties": {
+          "start_time": {
+            "type": "string",
+            "description": "开始时间（格式：YYYY-MM-DD HH:MM:SS）"
+          },
+          "end_time": {
+            "type": "string",
+            "description": "结束时间（格式：YYYY-MM-DD HH:MM:SS）"
+          }
+        }
+      }
+    }
+  }
+} 
